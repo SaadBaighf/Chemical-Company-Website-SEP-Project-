@@ -223,7 +223,61 @@ form[method="get"].d-flex {
   box-shadow: 0 0 0 3px rgba(8, 145, 182, 0.1) !important;
   outline: none;
 }
+/* ==========================================
+   ORDER STATUS BADGES (Client Dashboard Style)
+   ========================================== */
 
+/* Base style for all stat-badges to match the pill look */
+.stat-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem !important;
+  border-radius: 9999px !important; /* Fully rounded pill shape */
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important; /* Subtle border like Client Dashboard */
+}
+
+/* Completed (Green) */
+.stat-badge.status-completed {
+  background-color: var(--success-light) !important;
+  color: var(--success) !important;
+  border-color: rgba(16, 185, 129, 0.2) !important;
+}
+
+/* Sample Preparing (Yellow/Warning - matches "Pending" style) */
+.stat-badge.status-pending {
+  background-color: #fef3c7 !important;
+  color: #b45309 !important;
+  border-color: rgba(245, 158, 11, 0.2) !important;
+}
+
+/* Production Starts (Blue/Info) */
+.stat-badge.status-production {
+  background-color: #dbeafe !important;
+  color: #1e40af !important;
+  border-color: rgba(59, 130, 246, 0.2) !important;
+}
+
+/* Quality Checking (Indigo/Purple) */
+.stat-badge.status-quality {
+  background-color: #e0e7ff !important;
+  color: #4338ca !important;
+  border-color: rgba(99, 102, 241, 0.2) !important;
+}
+
+/* Ready for Shipment (Cyan) */
+.stat-badge.status-shipment {
+  background-color: #cffafe !important;
+  color: #0e7490 !important;
+  border-color: rgba(6, 182, 212, 0.2) !important;
+}
+
+/* Shipped (Primary Blue) */
+.stat-badge.status-shipped {
+  background-color: #ecfeff !important;
+  color: var(--primary) !important;
+  border-color: rgba(8, 145, 182, 0.2) !important;
+}
 .form-select {
   border: 1px solid #e2e8f0 !important;
   border-radius: 0.5rem !important;

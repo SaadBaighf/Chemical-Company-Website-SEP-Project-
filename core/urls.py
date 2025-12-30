@@ -13,7 +13,7 @@ urlpatterns = [
     
     # This specific path must exist for the "+ Order" button in client dashboard
     path('order/add/<int:client_id>/', views.add_order_for_client, name='add_order_for_client'),
-    
+    path('reorder/', views.reorder_dashboard, name='reorder_dashboard'),
     path('inventory/', views.inventory_dashboard, name='inventory_dashboard'),
     path('finance/', views.finance_dashboard, name='finance_dashboard'),
     
@@ -24,5 +24,6 @@ urlpatterns = [
     
     # API
     path('api/clients/', views.client_search_api, name='client_search_api'),
-    
+    path('api/material/<int:material_id>/vendors/', views.get_material_vendors, name='material_vendors'),
+
 ]

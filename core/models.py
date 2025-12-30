@@ -4,6 +4,17 @@ from django.utils import timezone
 from django.db.models import Max
 import hashlib
 
+class Vendor(models.Model):
+    name = models.CharField(max_length=200, unique=True)
+    contact_person = models.CharField(max, max_length=200, blank=True)
+    email = models.EmailField(blank=True)
+    phone = models.CharField(max_length=20, blank=True)
+    address = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
 class Client(models.Model):
     name = models.CharField(max_length=100)
     email = models.EmailField(null=True,blank=True)
@@ -100,16 +111,38 @@ class VendorBill(models.Model):
 
 class Material(models.Model):
     name = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    reorder_level = models.DecimalField(max_digits=10, decimal_places=2, default=50.00)
     quantity = models.DecimalField(max_digits=10, decimal_places=2)
     unit = models.CharField(max_length=20, default='kg')
     max_quantity = models.DecimalField(max_digits=10, decimal_places=2, default=1000.00)
     threshold = models.DecimalField(max_digits=10, decimal_places=2, default=100.00)
-    vendor = models.CharField(max_length=200, blank=True, null=True)
+    vendors = models.ManyToManyField('Vendor', related_name='materials', blank=True)
     last_updated = models.DateField(auto_now=True)  # ← Use DateField, not DateTimeField
     created_at = models.DateField(auto_now_add=True)  # ← Use DateField, not DateTimeField
 
     def __str__(self):
         return self.name
+
+class Reorder(models.Model):
+    material = models.ForeignKey(Material, on_delete=models.CASCADE)
+    vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE)
+    quantity = models.DecimalField(max_digits=10, decimal_places=2)
+    delivery_date = models.DateField()
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ('pending', 'Pending'),
+            ('shipped', 'Shipped'),
+            ('received', 'Received'),
+        ],
+        default='pending'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.material.name} - {self.quantity} {self.material.unit} (Status: {self.status})"
 
 class Invoice(models.Model):
     INVOICE_PREFIX = "INV"

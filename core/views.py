@@ -1,10 +1,12 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from .models import Client, Invoice, Order
+from .models import Material, Vendor, Reorder
 from .forms import ClientForm, OrderForm
 from  django.http import JsonResponse
 from .models import Client, Order, Material
 from django.urls import reverse
+from django.views.decorators.http import require_http_methods
 from django.db.models import Q, Count, Sum , F
 from core.models import Material
 import json
@@ -559,6 +561,99 @@ def client_search_api(request):
         for client in clients
     ]
     return JsonResponse(results, safe=False)
+
+@require_http_methods(["GET"])
+def get_material_vendors(request, material_id):
+    try:
+        material = Material.objects.get(id=material_id)
+        vendors = list(material.vendors.values('id', 'name'))
+        return JsonResponse({'vendors': vendors})
+    except Material.DoesNotExist:
+        return JsonResponse({'error': 'Material not found'}, status=404)
+
+def reorder_dashboard(request):
+    search_query = request.GET.get('search', '').strip()
+    status_filter = request.GET.get('status','').strip()
+    
+    materials = Material.objects.filter(quantity__lte=F('threshold'))
+    total_reorder_materials = materials.count()
+    low_stock_materials_count = materials.filter(
+        quantity__gt=0, 
+    ).count()
+    out_of_stock_materials_count = materials.filter(
+        quantity__lte=0
+    ).count()
+    
+    #  Get materials below threshold AND apply search
+    
+    if search_query:
+        materials = materials.filter(
+            Q(name__icontains=search_query)
+        )
+    
+    #Status Filter
+    if status_filter:
+        if status_filter == 'out_of_stock':
+            materials = materials.filter(quantity__lte=0)
+        elif status_filter == 'low_stock':
+            materials = materials.filter(quantity__gt=0)
+            
+    
+    low_stock_materials = materials.order_by('quantity')
+
+    if request.method == 'POST':
+        material_id = request.POST.get('material_id')
+        order_quantity = request.POST.get('order_quantity')
+        vendor_name = request.POST.get('vendor_name')
+        delivery_date = request.POST.get('delivery_date')
+
+        try:
+            material = Material.objects.get(id=material_id)
+            
+            # Handle new vendor
+            if vendor_name == "new_vendor":
+                new_vendor_name = request.POST.get('new_vendor_name', '').strip()
+                if not new_vendor_name:
+                    messages.error(request, "New vendor name cannot be empty.")
+                    return redirect('reorder_dashboard')
+                vendor_name = new_vendor_name
+
+            # Create or get vendor
+            vendor, created = Vendor.objects.get_or_create(name=vendor_name)
+
+            # Auto-link vendor to material if not already linked
+            if not material.vendors.filter(id=vendor.id).exists():
+                material.vendors.add(vendor)
+                if created:
+                    messages.info(request, f"✅ New vendor '{vendor.name}' added and linked to {material.name}")
+                else:
+                    messages.warning(request, f"⚠️ {vendor.name} was not previously linked to {material.name}. Now linked.")
+
+            # Create reorder record
+            Reorder.objects.create(
+                material=material,
+                vendor=vendor,
+                quantity=order_quantity,
+                delivery_date=delivery_date,
+                status='pending'
+            )
+
+            messages.success(request, f"✅ Reorder placed: {order_quantity} {material.unit} of {material.name} from {vendor.name}")
+            return redirect('reorder_dashboard')
+
+        except Exception as e:
+            messages.error(request, f"❌ Error: {str(e)}")
+            return redirect('reorder_dashboard')
+
+    context = {
+        'low_stock_materials': low_stock_materials,
+        'title': 'Reorder Dashboard',
+        'total_reorder_materials' : total_reorder_materials,
+        'low_stock_materials_count' : low_stock_materials_count,
+        'out_of_stock_materials_count' : out_of_stock_materials_count, 
+        
+    }
+    return render(request, 'reorder_dashboard.html', context)
 
 # views.py
 def view_invoice(request, invoice_id):

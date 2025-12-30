@@ -16,5 +16,5 @@ class OrderAdmin(admin.ModelAdmin):
 
 @admin.register(Material)
 class MaterialAdmin(admin.ModelAdmin):
-    list_display = ('name', 'quantity', 'threshold', 'unit' , 'vendor')
+    list_display = ('name', 'quantity', 'threshold', 'unit')
     
