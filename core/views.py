@@ -28,6 +28,9 @@ from django.db.models import Sum, F, DecimalField
 from django.db.models.functions import Coalesce
 from django.template.loader import render_to_string
 from django.db import models
+from django.db.models import F, Sum, DecimalField
+from django.db.models.functions import Coalesce
+from django.utils import timezone
 
 BANKS = [
     "Global Trust Bank",
@@ -47,13 +50,8 @@ IBANS = [
 
 def get_bank_details(invoice_id):
     """Return consistent bank name and IBAN for a given invoice ID."""
-    index = invoice_id % len(BANKS)  # Always same index for same ID
+    index = invoice_id % len(BANKS)  
     return BANKS[index], IBANS[index]
-
-# Add these imports at the top of your views.py if not already there
-from django.db.models import F, Sum, DecimalField
-from django.db.models.functions import Coalesce
-from django.utils import timezone
 
 def main_dashboard(request):
     """
