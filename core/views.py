@@ -57,9 +57,8 @@ def get_bank_details(invoice_id):
     return BANKS[index], IBANS[index]
 
 # models.py
-
 def main_dashboard(request):
-    # Calculate stats (keep your existing stats logic)
+    # Calculate stats
     total_clients = Client.objects.count()
     total_orders = Order.objects.count()
     total_materials = Material.objects.count()
@@ -77,7 +76,7 @@ def main_dashboard(request):
         if remaining > 0:
             unpaid_invoices += 1
     
-    # ✅ GET RECENT ACTIVITIES FROM ACTIVITY LOG (NEW APPROACH)
+    # ✅ GET RECENT ACTIVITIES FROM ACTIVITY LOG - WITH COMPLETE ICON MAPPING
     recent_activities = []
     activity_logs = ActivityLog.objects.order_by('-created_at')[:8]
     
@@ -86,18 +85,33 @@ def main_dashboard(request):
         if log.activity_type == 'client_created':
             icon = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>'
             color = 'rgba(14, 116, 144, 0.2)'
+        elif log.activity_type == 'client_updated':
+            icon = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>'
+            color = 'rgba(14, 116, 144, 0.2)'
         elif log.activity_type == 'client_deleted':
             icon = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><line x1="3" y1="20" x2="21" y2="20"></line></svg>'
             color = 'rgba(239, 68, 68, 0.2)'
         elif log.activity_type == 'order_created':
             icon = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>'
             color = 'rgba(59, 130, 246, 0.2)'
+        elif log.activity_type == 'order_updated':
+            icon = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>'
+            color = 'rgba(59, 130, 246, 0.2)'
+        elif log.activity_type == 'order_deleted':
+            icon = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><line x1="3" y1="20" x2="21" y2="20"></line></svg>'
+            color = 'rgba(239, 68, 68, 0.2)'
         elif log.activity_type == 'payment_recorded':
             icon = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="6" y1="12" x2="6" y2="12"></line><line x1="10" y1="12" x2="14" y2="12"></line><line x1="18" y1="12" x2="18" y2="12"></line></svg>'
             color = 'rgba(16, 185, 129, 0.2)'
         elif log.activity_type == 'material_created':
             icon = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>'
             color = 'rgba(245, 158, 11, 0.2)'
+        elif log.activity_type == 'material_updated':
+            icon = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path><line x1="12" y1="6" x2="12" y2="12"></line></svg>'
+            color = 'rgba(245, 158, 11, 0.2)'
+        elif log.activity_type == 'material_deleted':
+            icon = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path><line x1="3" y1="20" x2="21" y2="20"></line></svg>'
+            color = 'rgba(239, 68, 68, 0.2)'
         elif log.activity_type == 'reorder_created':
             icon = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 16v-6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6"></path><rect x="4" y="14" width="16" height="6" rx="2"></rect><line x1="12" y1="6" x2="12" y2="12"></line></svg>'
             color = 'rgba(245, 158, 11, 0.2)'
@@ -318,6 +332,15 @@ def order_dashboard(request):
         order = get_object_or_404(Order, id=order_id)
         order_id_str = order.order_id
         order.delete()
+        
+        # ✅ ADD ACTIVITY LOG FOR ORDER DELETION
+        ActivityLog.objects.create(
+            activity_type='order_deleted',
+            description=f'Order deleted: #{order_id_str}',
+            user=request.user,
+            order_id=order_id
+        )
+        
         messages.success(request, f"Order {order_id_str} deleted successfully.")
         return redirect('order_dashboard')
     
@@ -329,6 +352,15 @@ def order_dashboard(request):
         form = OrderForm(request.POST, instance=order)
         if form.is_valid():
             form.save()
+            
+            # ✅ ADD ACTIVITY LOG FOR ORDER UPDATE
+            ActivityLog.objects.create(
+                activity_type='order_updated',
+                description=f'Order updated: #{order.order_id} status changed to {order.status}',
+                user=request.user,
+                order_id=order.id
+            )
+            
             messages.success(request, f"Order {order.order_id} updated successfully.")
             return redirect('order_dashboard')
     
@@ -369,6 +401,15 @@ def add_order_for_client(request, client_id):
             order = form.save(commit=False)
             order.client = client  # Link to client
             order.save()
+            
+            # ✅ ADD ACTIVITY LOG FOR NEW ORDER
+            ActivityLog.objects.create(
+                activity_type='order_created',
+                description=f'New order created: #{order.order_id} for {client.name}',
+                user=request.user,
+                order_id=order.id
+            )
+            
             print("✅ Order saved:", order.order_id)
             messages.success(request, f"Order {order.order_id} added successfully for {client.name}!")
             return redirect('order_dashboard')
@@ -388,6 +429,16 @@ def inventory_dashboard(request):
             material_id = request.POST.get('material_id')
             try:
                 Material.objects.filter(id=material_id).delete()
+                
+                #Activity
+                ActivityLog.objects.create(
+                    activity_type = 'material_deleted',
+                    description = f'Material deleted : {material.name}',
+                    user = request.user,
+                    material_id = material.id
+                    
+                )
+                
                 messages.success(request, "Material deleted successfully.")
             except Exception as e:
                 messages.error(request, "Failed to delete material.")
@@ -403,6 +454,15 @@ def inventory_dashboard(request):
                 material.max_quantity = Decimal(request.POST['max_quantity'])
                 material.threshold = Decimal(request.POST['threshold'])
                 material.save()
+                
+                #ACTIvity
+                ActivityLog.objects.create(
+                    activity_type = 'material_updated',
+                    description = f'Material Updated : {material.name}',
+                    user = request.user,
+                    material_id = material.id
+                )
+                
                 messages.success(request, "Material updated successfully.")
             except Material.DoesNotExist:
                 messages.error(request, "Material not found.")
@@ -422,6 +482,15 @@ def inventory_dashboard(request):
                     threshold=Decimal(request.POST['threshold'])
                 )
                 material.save()
+                
+                #Activity
+                ActivityLog.objects.create(
+                    activity_type = 'material_record',
+                    description = f'New Material added : {material.name}',
+                    user = request.user,
+                    material_id = material.id
+                )
+                
                 messages.success(request, f"Material '{material.name}' added successfully.")
             except (InvalidOperation, ValueError):
                 messages.error(request, "Invalid number format in quantity fields.")
@@ -731,13 +800,22 @@ def reorder_dashboard(request):
                 else:
                     messages.warning(request, f"⚠️ {vendor.name} was not previously linked to {material.name}. Now linked.")
 
-            # Create reorder record
-            Reorder.objects.create(
+            # ✅ CAPTURE THE REORDER OBJECT
+            reorder = Reorder.objects.create(
                 material=material,
                 vendor=vendor,
                 quantity=order_quantity,
                 delivery_date=delivery_date,
                 status='pending'
+            )
+
+            # ✅ ADD ACTIVITY LOG FOR REORDER
+            ActivityLog.objects.create(
+                activity_type='reorder_created',
+                description=f'Reorder placed: {order_quantity} {material.unit} of {material.name} from {vendor.name}',
+                user=request.user,
+                reorder_id=reorder.id,  # ✅ Use the captured reorder ID
+                material_id=material.id
             )
 
             messages.success(request, f"✅ Reorder placed: {order_quantity} {material.unit} of {material.name} from {vendor.name}")
