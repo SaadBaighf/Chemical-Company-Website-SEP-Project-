@@ -6,6 +6,7 @@ from .forms import ClientForm, OrderForm
 from  django.http import JsonResponse
 from .models import Client, Order, Material
 from django.urls import reverse
+from .models import Client, Invoice, Order, Material, Vendor, Reorder, ActivityLog
 from django.views.decorators.http import require_http_methods
 from django.db.models import Q, Count, Sum , F
 from core.models import Material
@@ -31,6 +32,8 @@ from django.db import models
 from django.db.models import F, Sum, DecimalField
 from django.db.models.functions import Coalesce
 from django.utils import timezone
+from django.db import models
+from django.contrib.auth.models import User
 
 BANKS = [
     "Global Trust Bank",
@@ -53,52 +56,62 @@ def get_bank_details(invoice_id):
     index = invoice_id % len(BANKS)  
     return BANKS[index], IBANS[index]
 
+# models.py
+
 def main_dashboard(request):
-    """
-    Main dashboard view - landing page that shows real-time data from all dashboards
-    """
-    # Get data from Client Dashboard
+    # Calculate stats (keep your existing stats logic)
     total_clients = Client.objects.count()
-    
-    # Get data from Order Dashboard  
     total_orders = Order.objects.count()
-    
-    # Get data from Inventory/Reorder Dashboard
     total_materials = Material.objects.count()
     low_stock_materials = Material.objects.filter(quantity__lte=F('threshold')).count()
     out_of_stock_materials = Material.objects.filter(quantity__lte=0).count()
     
-    # Get data from Finance Dashboard
-    # This uses the same logic as your finance_dashboard view
-    client_invoices = Order.objects.select_related('client').prefetch_related('invoices').annotate(
-        total_paid=Coalesce(Sum('invoices__amount'), 0, output_field=DecimalField()),
-        db_remaining=F('payment') - Coalesce(Sum('invoices__amount'), 0, output_field=DecimalField())
-    )
-    total_invoices = client_invoices.count()
-    unpaid_invoices = client_invoices.filter(db_remaining__gt=0).count()
+    # Calculate finance stats
+    orders_with_payments = Order.objects.prefetch_related('invoices').all()
+    total_invoices = orders_with_payments.count()
+    unpaid_invoices = 0
     
-    # Recent Activity - you can customize this based on your needs
+    for order in orders_with_payments:
+        total_paid = sum(invoice.amount for invoice in order.invoices.all())
+        remaining = order.payment - total_paid
+        if remaining > 0:
+            unpaid_invoices += 1
+    
+    # ✅ GET RECENT ACTIVITIES FROM ACTIVITY LOG (NEW APPROACH)
     recent_activities = []
+    activity_logs = ActivityLog.objects.order_by('-created_at')[:8]
     
-    # Example: Recent orders (last 3)
-    recent_orders = Order.objects.select_related('client').order_by('-id')[:3]
-    for order in recent_orders:
+    for log in activity_logs:
+        # Map activity types to icons and colors
+        if log.activity_type == 'client_created':
+            icon = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>'
+            color = 'rgba(14, 116, 144, 0.2)'
+        elif log.activity_type == 'client_deleted':
+            icon = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><line x1="3" y1="20" x2="21" y2="20"></line></svg>'
+            color = 'rgba(239, 68, 68, 0.2)'
+        elif log.activity_type == 'order_created':
+            icon = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>'
+            color = 'rgba(59, 130, 246, 0.2)'
+        elif log.activity_type == 'payment_recorded':
+            icon = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="6" y1="12" x2="6" y2="12"></line><line x1="10" y1="12" x2="14" y2="12"></line><line x1="18" y1="12" x2="18" y2="12"></line></svg>'
+            color = 'rgba(16, 185, 129, 0.2)'
+        elif log.activity_type == 'material_created':
+            icon = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>'
+            color = 'rgba(245, 158, 11, 0.2)'
+        elif log.activity_type == 'reorder_created':
+            icon = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 16v-6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6"></path><rect x="4" y="14" width="16" height="6" rx="2"></rect><line x1="12" y1="6" x2="12" y2="12"></line></svg>'
+            color = 'rgba(245, 158, 11, 0.2)'
+        else:
+            # Default icon for other activities
+            icon = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle></svg>'
+            color = 'rgba(107, 114, 128, 0.2)'
+        
         recent_activities.append({
-            'description': f'New order #{order.order_id} from {order.client.name}',
-            'timestamp': order.created_at.strftime('%b %d') if hasattr(order, 'created_at') else timezone.now().strftime('%b %d'),
-            'icon': '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>',
-            'icon_color': 'rgba(59, 130, 246, 0.2)'
-        })
-    
-    # Example: Low stock materials (last 2)
-    low_stock_items = Material.objects.filter(quantity__lte=F('threshold')).order_by('quantity')[:2]
-    for material in low_stock_items:
-        status = 'OUT OF STOCK' if material.quantity <= 0 else 'LOW STOCK'
-        recent_activities.append({
-            'description': f'{material.name} is {status.lower()} ({material.quantity} {material.unit})',
-            'timestamp': timezone.now().strftime('%b %d'),
-            'icon': '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>',
-            'icon_color': 'rgba(239, 68, 68, 0.2)' if material.quantity <= 0 else 'rgba(245, 158, 11, 0.2)'
+            'description': log.description,
+            'timestamp': log.created_at.strftime('%b %d'),
+            'icon': icon,
+            'icon_color': color,
+            'category': log.activity_type.split('_')[0]
         })
     
     context = {
@@ -184,6 +197,15 @@ def client_dashboard(request):
         client = get_object_or_404(Client, id=client_id)
         client_name = client.name
         client.delete()
+        
+        # activity log
+        ActivityLog.objects.create(
+            activity_type = 'client_deleted',
+            description = f'Client deleted : {client_name}',
+            user = request.user,
+            client_id = client.id
+        )
+        
         messages.success(request, f"Client '{client_name}' deleted successfully.")
         return redirect('client_dashboard')
 
@@ -197,8 +219,26 @@ def client_dashboard(request):
             form = ClientForm(request.POST, request.FILES)
 
         if form.is_valid():
-            form.save()
+            client = form.save()
             action = "updated" if client_id else "added"
+            
+            #activity log
+            if action == "added":
+                ActivityLog.objects.create(
+                    activity_type = 'client_created',
+                    description = f'New client created : {client.name}',
+                        user = request.user,
+                        client_id = client.id
+                )
+            
+            else:
+                ActivityLog.objects.create(
+                    activity_type = 'client_updated',
+                    description =  f'Client Updated : {client.name}',
+                    user = request.user,
+                    client_id = client.id
+                )
+            
             messages.success(request, f"Client {action} successfully.")
             return redirect('client_dashboard')
     else:
@@ -501,6 +541,14 @@ def finance_dashboard(request):
                         order=order,
                         amount=new_total_paid,
                         payment_method='cash'  # or omit if you remove payment_method
+                    )
+                    
+                    # ✅ ADD ACTIVITY LOG
+                    ActivityLog.objects.create(
+                        activity_type='payment_recorded',
+                        description=f'Payment recorded: ${new_total_paid} for order #{order.order_id}',
+                        user=request.user,
+                        order_id=order.id
                     )
 
                     messages.success(request, "Payment updated successfully.")

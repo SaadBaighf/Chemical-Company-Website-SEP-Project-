@@ -4,6 +4,43 @@ from django.utils import timezone
 from django.db.models import Max
 import hashlib
 
+# core/models.py
+
+from django.db import models
+from django.contrib.auth.models import User
+
+# ... your existing models (Client, Order, Material, etc.) ...
+
+class ActivityLog(models.Model):
+    ACTIVITY_TYPES = [
+        ('client_created', 'Client Created'),
+        ('client_updated', 'Client Updated'), 
+        ('client_deleted', 'Client Deleted'),
+        ('order_created', 'Order Created'),
+        ('order_updated', 'Order Updated'),
+        ('order_deleted', 'Order Deleted'),
+        ('payment_recorded', 'Payment Recorded'),
+        ('material_created', 'Material Created'),
+        ('material_updated', 'Material Updated'),
+        ('material_deleted', 'Material Deleted'),
+        ('reorder_created', 'Reorder Created'),
+        ('invoice_created', 'Invoice Created'),
+    ]
+    
+    activity_type = models.CharField(max_length=50, choices=ACTIVITY_TYPES)
+    description = models.TextField()
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    # Optional: Store related object IDs for linking
+    client_id = models.IntegerField(null=True, blank=True)
+    order_id = models.IntegerField(null=True, blank=True)
+    material_id = models.IntegerField(null=True, blank=True)
+    reorder_id = models.IntegerField(null=True, blank=True)
+    
+    def __str__(self):
+        return f"{self.get_activity_type_display()} - {self.description}"
+
 class Vendor(models.Model):
     name = models.CharField(max_length=200, unique=True)
     contact_person = models.CharField(max, max_length=200, blank=True)
