@@ -52,7 +52,7 @@ def get_bank_details(invoice_id):
 
 # Add these imports at the top of your views.py if not already there
 from django.db.models import F, Sum, DecimalField
-from django.db.models.functions import Coalescex
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 
 def main_dashboard(request):
