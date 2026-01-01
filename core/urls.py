@@ -2,7 +2,7 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path('', views.home, name='home'),                                # Main Dashboard
+    path('', views.main_dashboard, name='main_dashboard'),                                # Main Dashboard
     path('client/', views.client_dashboard, name='client_dashboard'),
     
     # === ORDERS SECTION ===

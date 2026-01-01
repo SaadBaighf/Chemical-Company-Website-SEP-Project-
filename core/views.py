@@ -50,15 +50,71 @@ def get_bank_details(invoice_id):
     index = invoice_id % len(BANKS)  # Always same index for same ID
     return BANKS[index], IBANS[index]
 
+# Add these imports at the top of your views.py if not already there
+from django.db.models import F, Sum, DecimalField
+from django.db.models.functions import Coalescex
+from django.utils import timezone
+
 def main_dashboard(request):
-    clients = Client.objects.all()
-    orders = Order.objects.all()
-    materials = Material.objects.all()
-    return render(request, 'main.html', {
-        'clients': clients,
-        'orders': orders,
-        'materials': materials
-    })
+    """
+    Main dashboard view - landing page that shows real-time data from all dashboards
+    """
+    # Get data from Client Dashboard
+    total_clients = Client.objects.count()
+    
+    # Get data from Order Dashboard  
+    total_orders = Order.objects.count()
+    
+    # Get data from Inventory/Reorder Dashboard
+    total_materials = Material.objects.count()
+    low_stock_materials = Material.objects.filter(quantity__lte=F('threshold')).count()
+    out_of_stock_materials = Material.objects.filter(quantity__lte=0).count()
+    
+    # Get data from Finance Dashboard
+    # This uses the same logic as your finance_dashboard view
+    client_invoices = Order.objects.select_related('client').prefetch_related('invoices').annotate(
+        total_paid=Coalesce(Sum('invoices__amount'), 0, output_field=DecimalField()),
+        db_remaining=F('payment') - Coalesce(Sum('invoices__amount'), 0, output_field=DecimalField())
+    )
+    total_invoices = client_invoices.count()
+    unpaid_invoices = client_invoices.filter(db_remaining__gt=0).count()
+    
+    # Recent Activity - you can customize this based on your needs
+    recent_activities = []
+    
+    # Example: Recent orders (last 3)
+    recent_orders = Order.objects.select_related('client').order_by('-id')[:3]
+    for order in recent_orders:
+        recent_activities.append({
+            'description': f'New order #{order.order_id} from {order.client.name}',
+            'timestamp': order.created_at.strftime('%b %d') if hasattr(order, 'created_at') else timezone.now().strftime('%b %d'),
+            'icon': '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>',
+            'icon_color': 'rgba(59, 130, 246, 0.2)'
+        })
+    
+    # Example: Low stock materials (last 2)
+    low_stock_items = Material.objects.filter(quantity__lte=F('threshold')).order_by('quantity')[:2]
+    for material in low_stock_items:
+        status = 'OUT OF STOCK' if material.quantity <= 0 else 'LOW STOCK'
+        recent_activities.append({
+            'description': f'{material.name} is {status.lower()} ({material.quantity} {material.unit})',
+            'timestamp': timezone.now().strftime('%b %d'),
+            'icon': '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>',
+            'icon_color': 'rgba(239, 68, 68, 0.2)' if material.quantity <= 0 else 'rgba(245, 158, 11, 0.2)'
+        })
+    
+    context = {
+        'total_clients': total_clients,
+        'total_orders': total_orders,
+        'total_materials': total_materials,
+        'low_stock_materials': low_stock_materials,
+        'out_of_stock_materials': out_of_stock_materials,
+        'total_invoices': total_invoices,
+        'unpaid_invoices': unpaid_invoices,
+        'recent_activities': recent_activities,
+    }
+    
+    return render(request, 'main.html', context)
 
 def client_detail(request, client_id):
     client = get_object_or_404(Client, id=client_id)
