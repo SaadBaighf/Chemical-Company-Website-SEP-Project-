@@ -1,39 +1,31 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
-from .models import Client, Invoice, Order
-from .models import Material, Vendor, Reorder
+from .models import Client, Invoice, Order, Material, Vendor, Reorder , ActivityLog
 from .forms import ClientForm, OrderForm
 from  django.http import JsonResponse
-from .models import Client, Order, Material
 from django.urls import reverse
-from .models import Client, Invoice, Order, Material, Vendor, Reorder, ActivityLog
+from django.contrib.auth import authenticate, login
+from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
-from django.db.models import Q, Count, Sum , F
+from django.db.models import Q, Count, Sum , F , DecimalField
 from core.models import Material
 import json
 from datetime import datetime
 from django.utils import timezone
 from decimal import Decimal, InvalidOperation
-from django.http import HttpResponse
+from django.http import HttpResponse , Http404
 import random
 from django.template.loader import render_to_string
 import os
 import tempfile
 import subprocess
-from django.http import HttpResponse, Http404
-from django.shortcuts import get_object_or_404, redirect
-from django.contrib import messages
 from django.conf import settings
-from .models import Invoice
-from django.db.models import Sum, F, DecimalField
 from django.db.models.functions import Coalesce
-from django.template.loader import render_to_string
-from django.db import models
-from django.db.models import F, Sum, DecimalField
-from django.db.models.functions import Coalesce
-from django.utils import timezone
 from django.db import models
 from django.contrib.auth.models import User
+from django.views.decorators.csrf import csrf_protect
+
+
 
 BANKS = [
     "Global Trust Bank",
@@ -57,6 +49,23 @@ def get_bank_details(invoice_id):
     return BANKS[index], IBANS[index]
 
 # models.py
+
+@csrf_protect
+def admin_logout(request):
+    """Custom logout view with CSRF protection"""
+    if request.method == 'POST':
+        # Get the next page parameter
+        next_page = request.GET.get('next', 'admin_login')
+        # Log out the user
+        from django.contrib.auth import logout
+        logout(request)
+        # Redirect to login page
+        return redirect(next_page)
+    else:
+        # If not POST, show confirmation page
+        return render(request, 'logout_confirm.html')
+
+@login_required
 def main_dashboard(request):
     # Calculate stats
     total_clients = Client.objects.count()
@@ -167,6 +176,7 @@ def inventory_view(request):
         'low_stock': low_stock
     })
 
+@login_required
 def finance_view(request):
     # For now, use mock data (replace with real models later)
     client_invoices = [
@@ -182,8 +192,11 @@ def finance_view(request):
         'vendor_bills': vendor_bills
     })
 
+
 def home(request):
     return render(request, 'main.html')  # or whatever template you want
+
+@login_required
 def client_dashboard(request):
     # === CALCULATE STATS ===
     total_clients = Client.objects.count()
@@ -302,7 +315,7 @@ def client_dashboard(request):
     })
     
     
-
+@login_required
 def order_dashboard(request):
     orders = Order.objects.select_related('client').all()  # Efficient query
 
@@ -422,6 +435,7 @@ def add_order_for_client(request, client_id):
     })
 from django.shortcuts import render
 
+@login_required
 def inventory_dashboard(request):
     if request.method == 'POST':
         # --- DELETE ---
@@ -555,7 +569,7 @@ def inventory_dashboard(request):
     }
     return render(request, 'inventory.html', context)
 
-
+@login_required
 def finance_dashboard(request):
     if request.method == 'POST':
         
@@ -711,8 +725,6 @@ def finance_dashboard(request):
     }
     return render(request, 'finance.html', context)
 
-    
-
 def client_search_api(request):
     query = request.GET.get('q', '')
     if len(query) < 2:
@@ -742,6 +754,7 @@ def get_material_vendors(request, material_id):
     except Material.DoesNotExist:
         return JsonResponse({'error': 'Material not found'}, status=404)
 
+@login_required
 def reorder_dashboard(request):
     search_query = request.GET.get('search', '').strip()
     status_filter = request.GET.get('status','').strip()
@@ -876,7 +889,6 @@ def view_invoice(request, invoice_id):
 
     return render(request, 'invoice_detail.html', context)
 
-
 def download_invoice_pdf(request, invoice_id):
     invoice = get_object_or_404(Invoice, id=invoice_id)
     order = invoice.order
@@ -958,3 +970,32 @@ def download_invoice_pdf(request, invoice_id):
         for path in [html_path, pdf_path]:
             if os.path.exists(path):
                 os.remove(path)
+
+def admin_login(request):
+    """
+    Admin login view with custom template
+    """
+    # If user is already logged in, redirect to dashboard
+    if request.user.is_authenticated:
+        return redirect('main_dashboard')
+    
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        
+        # Debug: Print credentials to console (remove in production)
+        print(f"Login attempt - Username: {username}, Password: {'*' * len(password)}")
+        
+        user = authenticate(request, username=username, password=password)
+        
+        if user is not None:
+            if user.is_staff:  # Ensure only staff/admin users can login
+                login(request, user)
+                messages.success(request, f"Welcome back, {user.username}!")
+                return redirect('main_dashboard')  # Make sure this URL name matches your main dashboard
+            else:
+                messages.error(request, "Access denied. Admin privileges required.")
+        else:
+            messages.error(request, "Invalid username or password.")
+    
+    return render(request, 'admin_login.html')

@@ -127,3 +127,8 @@ MEDIA_URL =  '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+
+# settings.py
+LOGIN_URL = 'admin_login'  # Name of your login URL
+LOGIN_REDIRECT_URL = 'main_dashboard'  # Where to go after successful login
