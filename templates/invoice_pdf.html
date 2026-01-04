@@ -141,94 +141,78 @@
 </head>
 
 <body>
-    <!-- Download Button (logo-only) -->
-    <a href="{% url 'download_invoice_pdf' invoice.id %}" class="download-btn" title="Download PDF">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-    </a>
+    <div class="invoice-header">
+        <h1>Penta Industries</h1>
+        <p>Chemical Manufacturing Solutions</p>
+    </div>
 
-    <div class="container py-4">
-        <div class="invoice-container">
-            <!-- Header -->
-            <div class="invoice-header">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <div class="invoice-logo">
-                            <svg width="32" height="32" viewBox="0 0 100 100" style="fill: #0891b2; stroke: #ffffff;">
-                                <path d="M20,80 L20,40 Q20,30 30,30 L70,30 Q80,30 80,40 L80,80 L75,90 L25,90 Z" />
-                                <rect x="45" y="10" width="10" height="20" />
-                                <circle cx="35" cy="60" r="4" fill="#ffffff" />
-                                <circle cx="65" cy="50" r="3" fill="#ffffff" />
-                                <circle cx="50" cy="70" r="3.5" fill="#ffffff" />
-                                <line x1="35" y1="60" x2="50" y2="70" stroke="#ffffff" stroke-width="1.5" />
-                                <line x1="65" y1="50" x2="50" y2="70" stroke="#ffffff" stroke-width="1.5" />
-                            </svg>
-                        </div>
-                        <h2 class="h3 mb-1">Penta Industries</h2>
-                        <p class="mb-0 opacity-75">Chemical Solutions Provider</p>
-                    </div>
-                    <div class="invoice-meta">
-                        <h1 class="h2 mb-2">INVOICE</h1>
-                        <p class="mb-1"><strong>#{{ invoice.id }}</strong></p>
-                        <p class="mb-0">{{ invoice.created_at|date:"d M Y" }}</p>
-                    </div>
-                </div>
+    <!-- Client & Order Info -->
+    <div class="invoice-section">
+        <div class="section-title">Client & Order Information</div>
+        <div class="invoice-grid">
+            <div class="invoice-item">
+                <div>Client ID:</div>
+                <div>CL-{{ order.client.id }}</div>
             </div>
-
-            <!-- Client & Order Info -->
-            <div class="invoice-section">
-                <div class="invoice-grid">
-                    <div class="invoice-item">
-                        <h4>Billed To</h4>
-                        <p class="mb-1"><strong>Client ID:</strong> CL-{{ order.client.id }}</p>
-                        <p class="mb-0"><strong>Client Name:</strong> {{ order.client.name }}</p>
-                    </div>
-                    <div class="invoice-item">
-                        <h4>Order Details</h4>
-                        <p class="mb-1"><strong>Order ID:</strong> ORD-{{ order.order_id }}</p>
-                        <p class="mb-0"><strong>Total Amount:</strong> ${{ order.payment }}</p>
-                    </div>
-                </div>
+            <div class="invoice-item">
+                <div>Client Name:</div>
+                <div>{{ order.client.name }}</div>
             </div>
-
-            <!-- Payment Summary -->
-            <div class="invoice-section">
-                <h4 class="mb-3">Payment Summary</h4>
-                <div class="invoice-grid">
-                    <div class="invoice-item">
-                        <p><strong>Paid Amount:</strong> ${{ paid_amount }}</p>
-                    </div>
-                    <div class="invoice-item">
-                        <p><strong>Remaining Amount:</strong> ${{ remaining_amount }}</p>
-                    </div>
-                </div>
-
-                <!-- ✅ DUE AMOUNT = REMAINING -->
-                <div class="invoice-section text-end mt-3 pt-3 border-top">
-                    <div style="font-size: 1.25rem;">
-                        <span class="me-3">DUE AMOUNT:</span>
-                        <span class="text-danger fw-bold">${{ remaining_amount }}</span>
-                    </div>
-                </div>
+            <div class="invoice-item">
+                <div>Order ID:</div>
+                <div>ORD-{{ order.order_id }}</div>
             </div>
-
-            <!-- ✅ Bank Details -->
-            <div class="invoice-section">
-                <h4 class="mb-2">Bank Details for Payment</h4>
-                <div class="bank-details">
-                    <p class="mb-1"><strong>Bank Name:</strong> {{ bank_name }}</p>
-                    <p class="mb-0"><strong>IBAN:</strong> {{ iban }}</p>
-                </div>
+            <div class="invoice-item">
+                <div>Fabric Type:</div>
+                <div>{{ order.fabric_type|title }}</div>
             </div>
-
-            <!-- Footer -->
-            <div class="invoice-footer">
-                <p class="mb-1">Thank you for your business!</p>
-                <p class="mb-0">This is a computer-generated invoice. No signature required.</p>
+            <div class="invoice-item">
+                <div>Quantity:</div>
+                <div>{{ order.quantity }} units</div>
+            </div>
+            <div class="invoice-item">
+                <div>Due Date:</div>
+                <div>{{ order.due_date|date:"F d, Y" }}</div>
+            </div>
+            <div class="invoice-item">
+                <div>Total Amount:</div>
+                <div>${{ order.payment }}</div>
             </div>
         </div>
+    </div>
+
+    <!-- Payment Summary -->
+    <div class="invoice-section">
+        <div class="section-title">Payment Summary</div>
+        <div class="invoice-grid">
+            <div class="invoice-item">
+                <div>Paid Amount:</div>
+                <div>${{ paid_amount }}</div>
+            </div>
+            <div class="invoice-item">
+                <div>Remaining Balance:</div>
+                <div>${{ remaining_amount }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bank Details -->
+    <div class="bank-details">
+        <div class="section-title">Bank Details</div>
+        <div class="invoice-grid">
+            <div class="invoice-item">
+                <div>Bank Name:</div>
+                <div>{{ bank_name }}</div>
+            </div>
+            <div class="invoice-item">
+                <div>IBAN:</div>
+                <div>{{ iban }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div style="margin-top: 40px; text-align: center; font-size: 10px; color: #666;">
+        Generated on {{ invoice.created_at|date:"F d, Y" }} | Invoice ID: INV-{{ invoice.id }}
     </div>
 </body>
 
