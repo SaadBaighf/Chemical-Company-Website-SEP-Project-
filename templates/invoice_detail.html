@@ -191,7 +191,7 @@
                         <p class="mb-1"><strong>Order ID:</strong> ORD-{{ order.order_id }}</p>
                         <p class="mb-1"><strong>Fabric Type:</strong> <span class="text-capitalize">{{ order.fabric_type}}</span></p>
                         <p class="mb-1"><strong>Quantity:</strong> {{ order.quantity }} {{ order.unit|default:"units" }}</p>
-                        <p class="mb-1"><strong>Due Date:</strong> {{ order.due_date|date:"M d, Y" }}</p>
+                        <p class="mb-1"><strong>Reg Date:</strong> {{ order.due_date|date:"M d, Y" }}</p>
                         <p class="mb-0"><strong>Total Amount:</strong> ${{ order.payment }}</p>
                     </div>
                 </div>
