@@ -306,25 +306,23 @@
                 {% endif %}
               </td>
               <td>
-                <a href="{% url 'add_order_for_client' client.id %}" class="btn btn-sm btn-outline-success me-1">+
-                  Order</a>
+                <!-- <a href="{% url 'add_order_for_client' client.id %}" class="btn btn-sm btn-outline-success me-1">+
+                  Order</a> -->
 
-                <!-- Edit Button -->
-                <button type="button" class="btn btn-sm btn-outline-primary me-1 edit-client-btn"
+                <!-- <button type="button" class="btn btn-sm btn-outline-primary me-1 edit-client-btn"
                   data-id="{{ client.id }}" data-name="{{ client.name }}" data-email="{{ client.email }}"
                   data-phone="{{ client.phone }}" data-company="{{ client.company }}"
                   data-is_active="{{ client.is_active|yesno:" true,false" }}"
                   data-avatar-url="{% if client.avatar %}{{ client.avatar.url }}{% endif %}" data-bs-toggle="modal"
                   data-bs-target="#addClientModal">
                   Edit
-                </button>
+                </button> -->
 
-                <!-- Delete Button -->
-                <button type="button" class="btn btn-sm btn-outline-danger delete-btn"
+                <!-- <button type="button" class="btn btn-sm btn-outline-danger delete-btn"
                   data-client-name="{{ client.name }}" data-client-id="{{ client.id }}" data-bs-toggle="modal"
                   data-bs-target="#deleteConfirmModal">
                   Delete
-                </button>
+                </button> -->
               </td>
             </tr>
             {% empty %}
